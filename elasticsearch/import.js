@@ -19,6 +19,21 @@ async function run() {
     index: INDEX_NAME,
     body: {
       // TODO configurer l'index https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html
+      mappings: {
+        properties: {
+          timeStamp: {
+            type: 'date',
+            format: 'yyyy-MM-dd HH:mm:ss',
+          },
+          pin: {
+            properties: {
+              location: {
+                type: 'geo_point',
+              },
+            },
+          },
+        },
+      },
     },
   });
 
@@ -26,12 +41,19 @@ async function run() {
   fs.createReadStream('../911.csv')
     .pipe(csv())
     .on('data', (data) => {
+      const category = data.title.slice(0, data.title.indexOf(':'));
+      const categoryDetails = data.title.slice(data.title.indexOf(':') + 2);
       calls.push({
-        lat: data.lat,
-        lng: data.lng,
+        pin: {
+          location: {
+            lat: +data.lat,
+            lon: +data.lng,
+          },
+        },
         desc: data.desc,
-        zip: data.zip,
-        title: data.title,
+        zip: +data.zip,
+        category,
+        categoryDetails,
         timeStamp: data.timeStamp,
         twp: data.twp,
         addr: data.addr,
@@ -52,9 +74,9 @@ async function run() {
 
 function createBulkInsertQuery(calls) {
   const body = calls.reduce((acc, call) => {
-    const { lat, lng, desc, zip, title, timeStamp, twp, addr, e } = call;
+    //const { lat, lng, desc, zip, title, timeStamp, twp, addr, e } = call;
     acc.push({ index: { _index: INDEX_NAME } });
-    acc.push({ lat, lng, desc, zip, title, timeStamp, twp, addr, e });
+    acc.push(call);
     return acc;
   }, []);
 
