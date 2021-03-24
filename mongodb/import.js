@@ -37,6 +37,7 @@ const insertCalls = async function (db, callback) {
       collection.insertMany(calls, (err, result) => {
         callback(result);
       });
+      const res = await collection.createIndex({ categoryDetails: 'text' });
       const result = await collection.createIndex({ loc: '2dsphere' });
       console.log(`Index created: ${result}`);
     });
